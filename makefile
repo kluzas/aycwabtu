@@ -10,12 +10,12 @@ OBJDIR := obj
 DVBCSAINC 	:= libdvbcsa/dvbcsa
 DVBCSALIB 	:= $(DVBCSAINC)/libdvbcsa.a
 
-CFLAGS      =  -w -I $(DVBCSAINC) -msse2 -O2
+CFLAGS      =  -w -I $(DVBCSAINC) -O3  -flto -march=native  -g
 #CFLAGS      =  -w -I $(DVBCSAINC) -msse2 -D_DEBUG
 
 obj/%.o : %.c | $(OBJDIR)
 	@if [ "$<" == "aycwabtu_main.c" ] ; then (echo -n "#define GITSHA1 \"`git rev-parse --short=16 HEAD`\"") >aycwabtu_version.h; echo "aycwabtu_version.h written"; fi;
-	$(CC) -c -MD $(CFLAGS) -o obj/$*.o $<
+	$(CC) -c -g -MD $(CFLAGS) -o obj/$*.o $<
 
 ayc_src = \
 	aycwabtu_main.c             \
@@ -25,7 +25,11 @@ ayc_src = \
 	aycwabtu_bs_sse2.c     		\
 	aycwabtu_bs_stream.c        \
 	aycwabtu_bs_uint32.c	    \
-	aycwabtu_ts.c
+	aycwabtu_ts.c\
+	libdvbcsa/dvbcsa_algo.c\
+	libdvbcsa/dvbcsa_block.c\
+	libdvbcsa/dvbcsa_key.c\
+	libdvbcsa/dvbcsa_stream.c
 
 tsgen_src = tsgen.c
 
@@ -34,16 +38,13 @@ tsgen_obj = $(tsgen_src:%.c=obj/%.o)
 
 all: aycwabtu
    
-$(DVBCSALIB):
-	@echo making target 'all' in $(DVBCSAMAKE)
-	make --directory=libdvbcsa all
 
-aycwabtu: $(ayc_obj) $(DVBCSALIB)
-	$(LD) -static -s -o $@ $(ayc_obj) -static -L. -ldvbcsa/dvbcsa/libdvbcsa
+aycwabtu: $(ayc_obj) 
+	$(LD) -g -O3 -flto   -o $@ $(ayc_obj) 
 	@echo $@ created
 
 tsgen: $(tsgen_obj) $(DVBCSALIB)
-	$(LD) -o $@ $(tsgen_obj) -static -L. -ldvbcsa/dvbcsa/libdvbcsa
+	$(LD) -g -o $@ $(tsgen_obj) -static -L. -ldvbcsa/dvbcsa/libdvbcsa
 	@echo $@ created
 
 
@@ -60,6 +61,7 @@ $(ayc_obj) $(tsgen_obj) : makefile
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
+	mkdir $(OBJDIR)/libdvbcsa
 
 clean:
 	@rm -rf aycwabtu tsgen aycwabtu.exe tsgen.exe obj
