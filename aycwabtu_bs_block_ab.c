@@ -20,7 +20,7 @@ static const uint8 bf_key_perm[64] = { 19, 27, 55, 46, 1, 15, 36, 22, 56, 61, 39
 
 /*static const uint8 bf_key_perm[64] = {17, 35, 8, 6, 41, 48, 28, 20, 27, 53, 61, 49, 18, 32, 58, 63, 23, 19, 36, 38, 1, 52, 26, 0, 33, 3, 12, 13, 56, 39, 25, 40, 50, 34, 51, 11, 21, 47, 29, 57, 44, 30, 7, 24, 22, 46, 60, 16, 59, 4, 55, 42, 10, 5, 9, 43, 31, 62, 45, 14, 2, 37, 15, 54}; */
 
-void AYCW_INLINE aycw_block_key_perm(dvbcsa_bs_word_t* in, dvbcsa_bs_word_t* out)
+static void AYCW_INLINE aycw_block_key_perm(dvbcsa_bs_word_t* in, dvbcsa_bs_word_t* out)
 {
 #ifndef USEFASTBLOCKKEYPERM
    int i;
@@ -315,6 +315,7 @@ void aycw_block_decrypt(const dvbcsa_bs_word_t* keys, dvbcsa_bs_word_t* r)
    r += 8 * 56;
 
    // loop over kk[55]..kk[0]
+#pragma unroll
    for (i = 55; i >= 0; i--)
    {
       // OPTIMIZEME: can this function use less temp batch variables?
