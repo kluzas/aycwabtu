@@ -6,7 +6,7 @@ LD          = gcc
 
 OBJDIR := obj
 
-CFLAGS      = -O2
+CFLAGS      = -O3 -g  -flto
 
 obj/%.o : %.c | $(OBJDIR)
 	$(CC) -c $(CFLAGS) -o obj/$*.o $<
