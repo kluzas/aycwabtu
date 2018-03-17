@@ -17,3 +17,4 @@ testfile.ts
 *.log
 aycwabtu_version.h
 *.pyc
+tmp/
