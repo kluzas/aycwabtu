@@ -490,21 +490,24 @@ int main(int argc, char *argv[])
 
                   memcpy(&data, &probedata[1], 16);
                   dvbcsa_decrypt(&key, data, 16);
-                  if (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x01)
-                  {
-                     memcpy(&data, &probedata[2], 16);
-                     dvbcsa_decrypt(&key, data, 16);
-                     if (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x01)
-                     {
-                        printf("\nkey candidate successfully decrypted three packets\n");
-                        printf("KEY FOUND!!!    %02X %02X %02X [%02X]  %02X %02X %02X [%02X]\n",
-                           cw[0], cw[1], cw[2], cw[3], cw[4], cw[5], cw[6], cw[7]);
+                  if (data[0] == 0x00 ){
+                      if (data[1] == 0x00 && data[2] == 0x01)
+                      {
+                          memcpy(&data, &probedata[2], 16);
+                          dvbcsa_decrypt(&key, data, 16);
+                          if (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x01)
+                          {
+                              printf("\nkey candidate successfully decrypted three packets\n");
+                              printf("KEY FOUND!!!    %02X %02X %02X [%02X]  %02X %02X %02X [%02X]\n",
+                                      cw[0], cw[1], cw[2], cw[3], cw[4], cw[5], cw[6], cw[7]);
 
-                        if (!benchmark) aycw_write_keyfoundfile(cw);
-                        exit(KEYFOUND);
+                              if (!benchmark) aycw_write_keyfoundfile(cw);
+                              exit(KEYFOUND);
 
-                     }
-                  }
+                          }
+                      }
+               }
+
                }
             }
          }
