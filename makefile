@@ -40,7 +40,7 @@ all: aycwabtu
    
 
 aycwabtu: $(ayc_obj) 
-	$(LD) -g -O3 -flto   -o $@ $(ayc_obj) 
+	$(LD) -g -O3 -flto -static   -o $@ $(ayc_obj) 
 	@echo $@ created
 
 tsgen: $(tsgen_obj) $(DVBCSALIB)
