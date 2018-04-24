@@ -1,7 +1,7 @@
 .PHONY: all clean
 
-CC          = gcc
-LD          = gcc
+CC          = gcc-6
+LD          = gcc-6
 
 SHELL=bash
 
@@ -10,7 +10,7 @@ OBJDIR := obj
 DVBCSAINC 	:= libdvbcsa/dvbcsa
 DVBCSALIB 	:= $(DVBCSAINC)/libdvbcsa.a
 
-CFLAGS      =  -w -I $(DVBCSAINC) -O3  -flto -march=native  -g
+CFLAGS      =  -w -I $(DVBCSAINC) -O3  -flto -march=znver1  -g -fopenmp 
 #CFLAGS      =  -w -I $(DVBCSAINC) -msse2 -D_DEBUG
 
 obj/%.o : %.c | $(OBJDIR)
@@ -40,7 +40,7 @@ all: aycwabtu
    
 
 aycwabtu: $(ayc_obj) 
-	$(LD) -g -O3 -flto -static   -o $@ $(ayc_obj) 
+	$(LD) -g -O3 -flto -static  -fopenmp  -o $@ $(ayc_obj) 
 	@echo $@ created
 
 tsgen: $(tsgen_obj) $(DVBCSALIB)

@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 
 #ifdef WIN32
 #  include <windows.h>
 #else
-#  include <time.h>
+# include <pthread.h>
+# include <time.h>
 #endif
 
 #include "aycwabtu_config.h"
@@ -35,9 +37,7 @@
 #define RESUMEFILENAME  "resume"
 #define FOUNDFILENAME   "keyfound"
 
-/****************** globals ***********************/
-uint32 currentkey32;
-uint32 stopkey32;
+
 
 void ayc_printhexbytes(unsigned char *c, uint8 len)
 {
@@ -81,7 +81,7 @@ void aycw_performance_start(void)
 }
 
 /* print performance measure to console */
-void aycw_perf_show(void)
+void aycw_perf_show(uint32_t currentkey32, uint32_t innerbatch )
 {
    const char prop[] = "|/-\\";
 
@@ -101,11 +101,11 @@ void aycw_perf_show(void)
       //printf(" time per %dk keys: %dms", KEYSPERINNERLOOP / 1000, deltaticks);
       if (deltaticks)
       {
-         printf(" %.3f Mcw/s ", ((float)KEYSPERINNERLOOP*DIVIDER / deltaticks / 1000));
+         printf(" %.3f Mcw/s ", ((float)innerbatch*KEYSPERINNERLOOP*DIVIDER / deltaticks / 1000));
       }
       if (totalticks)
       {
-         printf("avg: %.3f Mcw/s  ", ((float)KEYSPERINNERLOOP*DIVIDER / ((float)totalticks / totalloops)) / 1000);
+         printf("avg: %.3f Mcw/s  ", ((float)innerbatch*KEYSPERINNERLOOP*DIVIDER / ((float)totalticks / totalloops)) / 1000);
       }
       printf("%02X %02X %02X [] %02X .. .. []\r",
          currentkey32 >> 24,
@@ -116,7 +116,7 @@ void aycw_perf_show(void)
 }
 
 /* save to the current key to file to remember brute force progress */
-void aycw_write_resumefile(void)
+void aycw_write_resumefile(uint32_t currentkey32 )
 {
    static int divider = 10;    /* long live the ssd */
    FILE * filehdl;
@@ -185,7 +185,6 @@ void aycw_write_keyfoundfile(unsigned char *cw)
 }
 
 aycw_tstRegister     stRegister;
-   dvbcsa_bs_word_t	r[8 * (1 + 8 + 56)];        // working data block
 
    dvbcsa_bs_word_t     bs_128[8 * 16];
    dvbcsa_bs_word_t     bs_64_1[64];
@@ -259,13 +258,59 @@ void aycw_welcome_banner(void)
 
 
 /* Inner loop */
-void process_block_of_keys(uint8 keylist[BS_BATCH_SIZE][8],unsigned char probedata[3][16], int benchmark, dvbcsa_bs_word_t bs_data_sb0[8 * 16],dvbcsa_bs_word_t bs_data_ib0[8 * 16]  ){
+// keylist is readony
+// probedata is readonly
+void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16], dvbcsa_bs_word_t gbs_data_sb0[8 * 16], dvbcsa_bs_word_t gbs_data_ib0[8 * 16]  ){
     int k,i;
     dvbcsa_bs_word_t  candidates;       /* 1 marks a key candidate in the batch */
 
+    dvbcsa_bs_word_t	r[8 * (1 + 8 + 56)];        // working data block
+    unsigned char probedata[3][16];
+    dvbcsa_bs_word_t bs_data_sb0[8 * 16];
+    dvbcsa_bs_word_t bs_data_ib0[8 * 16]; 
+
+
+    memcpy(probedata,gprobedata, 3*16*sizeof(unsigned char));
+
+    memcpy(bs_data_sb0,gbs_data_sb0, 8*16*sizeof(dvbcsa_bs_word_t));
+    memcpy(bs_data_ib0,gbs_data_ib0, 8*16*sizeof(dvbcsa_bs_word_t));
+
+
+
+
+    uint8 keylist[BS_BATCH_SIZE][8];     /* the list of keys for the batch run in non-bitsliced form */
+#if BS_BATCH_SIZE>256
+#error keylist calculation cannot yet handle BS_BATCH_SIZE>256
+#endif
+
+      /* bytes 5 + 6 belong to the inner loop
+         aycw_bs_increment_keys_inner() increments every slice by one starting byte 5 LSB (bit 40) 
+         from byte 6 MSB down the slices spread key ranges.
+         example: BS_BATCH_SIZE=32  -> topmost 5 bits of byte 6 (2^5==32) contain different values for batches
+         
+         batch    byte 5   byte 6
+         0        00       00
+         1        00       08
+         2        00       10
+         3        00       18
+         .....
+         31       00       F8         */
+      for (i = 0; i < BS_BATCH_SIZE; i++)
+      {
+         keylist[i][0] = currentkey32 >> 24;
+         keylist[i][1] = currentkey32 >> 16;
+         keylist[i][2] = currentkey32 >> 8;
+         keylist[i][3] = keylist[i][0] + keylist[i][1] + keylist[i][2];
+         keylist[i][4] = currentkey32;
+         keylist[i][5] = 0;
+         keylist[i][6] = (0x0100 >> BS_BATCH_SHIFT)*i;
+         keylist[i][7] = keylist[i][4] + keylist[i][5] + keylist[i][6];
+      }
+
+
     /************** block ***************/
-    dvbcsa_bs_word_t     keys_bs[64];            // bit sliced keys for block
-    dvbcsa_bs_word_t     keyskk[448];            // bit sliced scheduled keys (64 bit -> 448 bit)
+    dvbcsa_bs_word_t     keys_bs[64] ;            // bit sliced keys for block
+    dvbcsa_bs_word_t     keyskk[448] ;            // bit sliced scheduled keys (64 bit -> 448 bit)
     aycw_key_transpose(&keylist[0][0], keys_bs);     // transpose BS_BATCH_SIZE keys into bitsliced form
 
     // check if all keys were transposed correctly
@@ -359,7 +404,7 @@ void process_block_of_keys(uint8 keylist[BS_BATCH_SIZE][8],unsigned char probeda
                                 printf("KEY FOUND!!!    %02X %02X %02X [%02X]  %02X %02X %02X [%02X]\n",
                                         cw[0], cw[1], cw[2], cw[3], cw[4], cw[5], cw[6], cw[7]);
 
-                                if (!benchmark) aycw_write_keyfoundfile(cw);
+                                aycw_write_keyfoundfile(cw);
                                 exit(KEYFOUND);
 
                             }
@@ -381,6 +426,9 @@ int main(int argc, char *argv[])
 {
    int      i, k;
    int      benchmark=0;
+
+    uint32 currentkey32;
+    uint32 stopkey32;
    
    /************** stream ***************/
    dvbcsa_bs_word_t     bs_data_sb0[8 * 16];    // constant scrambled data blocks SB0 + SB1, global init for stream, da_diett.pdf 5.1
@@ -392,7 +440,6 @@ int main(int argc, char *argv[])
    dvbcsa_bs_word_t	r[8 * (1 + 8 + 0)];         //
 #endif
 
-   uint8 keylist[BS_BATCH_SIZE][8];     /* the list of keys for the batch run in non-bitsliced form */
 
    /************ dummy data for benchmark run *****************/
    /* first two 8 byte data blocks from three different encrypted ts packets for brute force attack.
@@ -401,6 +448,7 @@ int main(int argc, char *argv[])
       { 0xB2, 0x74, 0x85, 0x51, 0xF9, 0x3C, 0x9B, 0xD2,  0x30, 0x9E, 0x8E, 0x78, 0xFB, 0x16, 0x55, 0xA9},
       { 0x25, 0x2D, 0x3D, 0xAB, 0x5E, 0x3B, 0x31, 0x39,  0xFE, 0xDF, 0xCD, 0x84, 0x51, 0x5A, 0x86, 0x4A},
       { 0xD0, 0xE1, 0x78, 0x48, 0xB3, 0x41, 0x63, 0x22,  0x25, 0xA3, 0x63, 0x0A, 0x0E, 0xD3, 0x1C, 0x70} };
+   //currentkey32 = 0x00 << 24 | 0x11 << 16 | 0x15 << 8 | 0x00;
    currentkey32 = 0x00 << 24 | 0x11 << 16 | 0x15 << 8 | 0x00;
    /* key   00 11 22 33  44 00 00 44 decrypts to
                000001ff11111111aa11111111111155
@@ -481,55 +529,26 @@ int main(int argc, char *argv[])
    aycw_bit2byteslice(bs_data_ib0, 1);
 #endif
 
+   int threads = omp_get_num_threads();
+
+   // Increase it dynamic
+#define INNERBATCH 128
    /************* outer loop ******************/
    // run over whole key search space
    // key bytes incremented: 0 + 1 + 2 + 4 
    while (currentkey32 <= stopkey32)
    {
-      aycw_performance_start();
+       aycw_performance_start();
 
-      /* bytes 5 + 6 belong to the inner loop
-         aycw_bs_increment_keys_inner() increments every slice by one starting byte 5 LSB (bit 40) 
-         from byte 6 MSB down the slices spread key ranges.
-         example: BS_BATCH_SIZE=32  -> topmost 5 bits of byte 6 (2^5==32) contain different values for batches
-         
-         batch    byte 5   byte 6
-         0        00       00
-         1        00       08
-         2        00       10
-         3        00       18
-         .....
-         31       00       F8         */
-#if BS_BATCH_SIZE>256
-#error keylist calculation cannot yet handle BS_BATCH_SIZE>256
-#endif
-      for (i = 0; i < BS_BATCH_SIZE; i++)
-      {
-         keylist[i][0] = currentkey32 >> 24;
-         keylist[i][1] = currentkey32 >> 16;
-         keylist[i][2] = currentkey32 >> 8;
-         keylist[i][3] = keylist[i][0] + keylist[i][1] + keylist[i][2];
-         keylist[i][4] = currentkey32;
-         keylist[i][5] = 0;
-         keylist[i][6] = (0x0100 >> BS_BATCH_SHIFT)*i;
-         keylist[i][7] = keylist[i][4] + keylist[i][5] + keylist[i][6];
-      }
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
+#pragma omp parallel for default(shared) private(i)
+       for (i=0; i<INNERBATCH; i++){
+           process_block_of_keys(currentkey32+i, probedata, bs_data_sb0, bs_data_ib0 );
+       }
 
+       aycw_perf_show( currentkey32, INNERBATCH );
+       if (!benchmark) aycw_write_resumefile(currentkey32);
 
-      process_block_of_keys(keylist,probedata,benchmark , bs_data_sb0, bs_data_ib0 );
-
-    
-      /***********************************************************************************************************************/
-      /***********************************************************************************************************************/
-      /***********************************************************************************************************************/
-      aycw_perf_show();
-
-      if (!benchmark) aycw_write_resumefile();
-
-      currentkey32++;   // prepare for next 2^16 keys
+       currentkey32 += INNERBATCH;   // prepare for next threads * 2^16 keys
 
    };  // while (currentkey32 < stopkey32)
 
