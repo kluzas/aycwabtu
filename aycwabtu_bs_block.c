@@ -283,7 +283,7 @@ void aycw_block_decrypt(const dvbcsa_bs_word_t* keys, dvbcsa_bs_word_t* r)
       for (j = 0; j < 8; j++)
       {
 
-#if 0
+#if 1
          /* calling per reference is 19% faster with MS CC but gcc decided 
             to optimize the whole funtion call away for some reason ?!? :-( */
          dvbcsa_bs_word_t sbox_out = BS_XOR(keys[i * 8 + j], r6xK[j]);
@@ -369,7 +369,9 @@ int aycw_checkPESheader(dvbcsa_bs_word_t *data, dvbcsa_bs_word_t *candidates)
    {
       // check also for 4th byte Audio streams (0xC0-0xDF), Video streams (0xE0-0xEF) ?
       tmp = BS_OR(BS_OR(data[i], data[i + 8]), BS_XOR(data[i + 16], BS_VAL8(01)));    // 0x00 | 0x00 | 0x01^0x01 == 0x00
-      // OPTIMIZEME: check whole batch for zero bits at once?
+
+      if ( CHECK_ZERO(tmp) != 0) continue;
+
       for (j = 0; j < BS_BATCH_BYTES; j++)
       {
          a = BS_EXTRACT8(tmp, j);

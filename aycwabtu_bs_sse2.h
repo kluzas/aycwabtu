@@ -45,5 +45,16 @@ dvbcsa_bs_word_t BS_SHR(dvbcsa_bs_word_t v, int n);
 
 #define BS_EMPTY()
 
+
+#ifdef __SSE4_2__
+
+#define CHECK_ZERO(a) _mm_testz_si128((a),(a))
+
+#else
+
+#define CHECK_ZERO(a) (_mm_movemask_epi8(_mm_cmpeq_epi32((a),_mm_setzero_si128())) == 0xFFFF)
+
+#endif
+
 #endif
 
