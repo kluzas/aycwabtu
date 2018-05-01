@@ -370,16 +370,15 @@ int aycw_checkPESheader(dvbcsa_bs_word_t *data, dvbcsa_bs_word_t *candidates)
       // check also for 4th byte Audio streams (0xC0-0xDF), Video streams (0xE0-0xEF) ?
       tmp = BS_OR(BS_OR(data[i], data[i + 8]), BS_XOR(data[i + 16], BS_VAL8(01)));    // 0x00 | 0x00 | 0x01^0x01 == 0x00
 
-      if ( CHECK_ZERO(tmp) != 0) continue;
-
       for (j = 0; j < BS_BATCH_BYTES; j++)
       {
          a = BS_EXTRACT8(tmp, j);
          if (a == 0)
          {
             // key candidate found in bytesliced data array at i, j
-            c = BS_OR(c, BS_SHL(BS_VAL_LSDW(1), i*BS_BATCH_BYTES + j));
-            ret++;
+            *candidates = c = BS_OR(c, BS_SHL(BS_VAL_LSDW(1), i*BS_BATCH_BYTES + j));
+            return j+1; // TODO: ensure that we are allowed 
+            //ret++;
          }
       }
    }

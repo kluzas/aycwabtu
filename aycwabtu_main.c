@@ -364,9 +364,10 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
         i = aycw_checkPESheader(r, &candidates);  /* OPTIMIZEME: return value should be first possible slice number to let the loop below start right there */
         if (i)
         {
+            i--;
             // candidate keys marked with '1' for the last batch run
             //printf("\n %d key candidate(s) found\n", i);
-            for (i = 0; i < BS_BATCH_SIZE; i++)
+            for (; i < BS_BATCH_SIZE; i++)
             {
 
                 if (1 == BS_EXTLS32(BS_AND(BS_SHR(candidates, i), BS_VAL8(01))))
