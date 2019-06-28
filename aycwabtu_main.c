@@ -359,17 +359,15 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
         /************** block xor stream ***************/
         aycw_bs_xor24(r, r, &bs_data_ib0[64]);
 
-        //for (i = 32; i < 64; i++) r[i] = BS_VAL8(55);   // destroy decrypted bytes 4...7 of DB0 shouldnt matter
 
         aycw_assert_decrypt_result(probedata, keylist, r);
 
         i = aycw_checkPESheader(r, &candidates);  /* OPTIMIZEME: return value should be first possible slice number to let the loop below start right there */
         if (i)
         {
-            i--;
             // candidate keys marked with '1' for the last batch run
             //printf("\n %d key candidate(s) found\n", i);
-            for (; i < BS_BATCH_SIZE; i++)
+            for (i=0; i < BS_BATCH_SIZE; i++)
             {
 
                 if (1 == BS_EXTLS32(BS_AND(BS_SHR(candidates, i), BS_VAL8(01))))
@@ -396,6 +394,7 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
 
                     memcpy(&data, &probedata[1], 16);
                     dvbcsa_decrypt(&key, data, 16);
+
                     if (data[0] == 0x00 ){
                         if (data[1] == 0x00 && data[2] == 0x01)
                         {
