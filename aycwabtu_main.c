@@ -91,6 +91,8 @@ void aycw_perf_show(uint32_t currentkey32, uint32_t innerbatch )
 #define DIVIDER 16      // reduce update frequency for release
 #endif
 
+#define DIVIDER 1
+
    divider++; 
    if (divider >= DIVIDER) divider = 0;
    if (!divider)
