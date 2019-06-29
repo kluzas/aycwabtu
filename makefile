@@ -1,7 +1,7 @@
 .PHONY: all clean
 
-CC          = gcc-6
-LD          = gcc-6
+CC          = gcc
+LD          = gcc
 
 SHELL=bash
 
@@ -40,7 +40,7 @@ all: aycwabtu
    
 
 aycwabtu: $(ayc_obj) 
-	$(LD) -g -O3 -flto -static  -fopenmp  -o $@ $(ayc_obj) 
+	$(LD) -g -O3   -fopenmp -flto  -o $@ $(ayc_obj) 
 	@echo $@ created
 
 tsgen: $(tsgen_obj) $(DVBCSALIB)
