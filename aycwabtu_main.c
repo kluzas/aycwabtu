@@ -19,7 +19,7 @@
 #include "aycwabtu_ts.h"
 
 #include "aycwabtu_version.h"    // this file contains GITSHA1 define and is generated before build
-#define VERSION   "V1.1"
+#define VERSION   "V1.2"
 
 /* bitslice test cases */
 #include "aycwabtu_bs_testcases.h"
@@ -88,8 +88,9 @@ void aycw_perf_show(uint32_t currentkey32, uint32_t innerbatch )
 #ifdef _DEBUG
 #define DIVIDER 1
 #else
-#define DIVIDER 16      // reduce update frequency for release
+#define DIVIDER 8      // reduce update frequency for release
 #endif
+
 
    divider++; 
    if (divider >= DIVIDER) divider = 0;
@@ -243,14 +244,13 @@ void aycw_welcome_banner(void)
 #ifdef _DEBUG
    printf(" DEBUG");
 #endif
-   printf("\ngit version hash: %s\n", GITSHA1);
-   printf("\nCPU only, single threaded version");
+   printf("\nCPU only");
 #ifdef USEALLBITSLICE
    printf(" - all bit slice (bool sbox)");
 #else
    printf(" - table sbox");
 #endif
-   printf("\nparallel bitslice batch size is %d\n", BS_BATCH_SIZE);
+   printf("\nParallel bitslice batch size is %d\n", BS_BATCH_SIZE);
    printf("----------------------------------------\n");
    setbuf(stdout, NULL);   // for gcc
 }

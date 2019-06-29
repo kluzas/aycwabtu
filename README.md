@@ -1,11 +1,12 @@
-AYCWABTU
+AYCWABTU Improved
 ========
 
 overview
 --------
-AYCWABTU Improved is a proof of concept for a brute force control word
-calculation tool for the common scrambling algorithm used in digital video
-broadcasting.
+AYCWABTU Improved is an improved version of the original AYCWABTU.
+
+AYCWABTU is a proof of concept for a brute force control word calculation 
+tool for the common scrambling algorithm used in digital video broadcasting.
 
 AYCWABTU is not useful for live decryption of pay TV channels because the
 search for one key needs much more time than the key renewal interval. Majority
@@ -28,13 +29,17 @@ Performance Improvements over the original AYCWABTU
 * Small improvements on the code
 
 
-Performance (Ryzen 1600 @3.6GHz):
+Performance (Ryzen 1600 @3.6GHz) Linux gcc-6:
 
 - Initial version (Single threaded):  5 Mcw/s
 - Compiler flags and code cleanup(Single threaded):   7 Mcw/s
 - 6 OpenMP threads: 40 Mcw/s
 - 12 OpenMP threads (SMT): 41 Mcw/s
 
+
+Performance (Ryzen 1600 @3.6GHz) Windows Visual Studio 2019:
+- Single threaded:   5 Mcw/s
+- 12 OpenMP threads (SMT): 30.671 Mcw/s
 
 features
 --------

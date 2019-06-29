@@ -18,3 +18,5 @@ testfile.ts
 aycwabtu_version.h
 *.pyc
 tmp/
+/.vs
+/libdvbcsa/dvbcsa
