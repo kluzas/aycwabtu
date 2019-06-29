@@ -14,7 +14,7 @@
 
 #ifndef USEALLBITSLICE
 
-void AYCW_INLINE aycw_block_sbox(dvbcsa_bs_word_t *);
+void aycw_block_sbox(dvbcsa_bs_word_t *);
 
 #ifdef USEWORDBLOCKSBOX
 static uint16   aycw_block_sbox16[0x10000];
@@ -179,7 +179,7 @@ void aycw_block_key_schedule(const dvbcsa_bs_word_t* keys, dvbcsa_bs_word_t* kk)
    }
 }
 
-AYCW_INLINE void aycw_block_sbox(dvbcsa_bs_word_t *w)
+void aycw_block_sbox(dvbcsa_bs_word_t *w)
 {
 #ifndef USEWORDBLOCKSBOX
    // table lookup, works one byte at a time
@@ -207,7 +207,7 @@ AYCW_INLINE void aycw_block_sbox(dvbcsa_bs_word_t *w)
    ret = BS_OR(ret, BS_SHL8(BS_VAL_LSDW(u16tmp), shift));   }
 
 
-AYCW_INLINE dvbcsa_bs_word_t aycw_block_sbox_by_value(dvbcsa_bs_word_t in)
+dvbcsa_bs_word_t aycw_block_sbox_by_value(dvbcsa_bs_word_t in)
 {
 /* the 8 bit lookup part (!USEWORDBLOCKSBOX) could be implemented here too... */
    dvbcsa_bs_word_t  ret = BS_VAL8(00);
