@@ -98,8 +98,9 @@ void aycw_perf_show(uint32_t currentkey32, uint32_t innerbatch )
    {
       putc(prop[(totalloops & 3)],stdout);
       deltaticks = aycw__getTicks_ms() - time_start; /* quick'n dirty - no overflow checking... */
-      totalticks += deltaticks; totalloops++;
-      //printf(" time per %dk keys: %dms", KEYSPERINNERLOOP / 1000, deltaticks);
+      totalticks += deltaticks; 
+			totalloops++;
+
       if (deltaticks)
       {
          printf(" %.3f Mcw/s ", ((float)innerbatch*KEYSPERINNERLOOP*DIVIDER / deltaticks / 1000));
@@ -209,9 +210,6 @@ void aycw_partsbench(void)
    printf("  aycw__vInitShiftRegister()      %.3fs\n", ((float)aycw__getTicks_ms() - start) / 1000);
 
    start = aycw__getTicks_ms();
-#ifndef USEALLBITSLICE
-   for (i = 0; i<max; i++) aycw_bit2byteslice(bs_448, 7);
-#endif
    printf("aycw_bit2byteslice(7)             %.3fs\n", ((float)aycw__getTicks_ms() - start) / 1000);
 
    start = aycw__getTicks_ms();
@@ -223,18 +221,13 @@ void aycw_partsbench(void)
    printf("aycw_block_decrypt                %.3fs\n", ((float)aycw__getTicks_ms() - start) / 1000);
 
    start = aycw__getTicks_ms();
-#ifdef USEALLBITSLICE
    for (i = 0; i<56 * max; i++) aycw_block_sbox(r, bs_448);
-#else
-   for (i = 0; i<56 * max; i++) aycw_block_sbox(r, bs_448);
-#endif
    printf("  aycw_block_sbox  (56x)          %.3fs\n", ((float)aycw__getTicks_ms() - start) / 1000);
 
    start = aycw__getTicks_ms();
    for (i = 0; i<max; i++) aycw_checkPESheader(r, bs_64_1);
    printf("aycw_checkPESheader               %.3fs\n", ((float)aycw__getTicks_ms() - start) / 1000);
 
-   //printf("%d %d %d\n", bs_64_1[0], r[0], bs_448[0]);
 #endif
 }
 
@@ -245,21 +238,13 @@ void aycw_welcome_banner(void)
    printf(" DEBUG");
 #endif
    printf("\nCPU only");
-#ifdef USEALLBITSLICE
    printf(" - all bit slice (bool sbox)");
-#else
-   printf(" - table sbox");
-#endif
    printf("\nParallel bitslice batch size is %d\n", BS_BATCH_SIZE);
    printf("----------------------------------------\n");
-   setbuf(stdout, NULL);   // for gcc
+   setbuf(stdout, NULL);  
 }
 
-
-
-/* Inner loop */
-// keylist is readony
-// probedata is readonly
+/* Inner loop call */
 void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16], dvbcsa_bs_word_t gbs_data_sb0[8 * 16], dvbcsa_bs_word_t gbs_data_ib0[8 * 16]  ){
     int k,i;
     dvbcsa_bs_word_t  candidates;       /* 1 marks a key candidate in the batch */
@@ -269,14 +254,9 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
     dvbcsa_bs_word_t bs_data_sb0[8 * 16];
     dvbcsa_bs_word_t bs_data_ib0[8 * 16]; 
 
-
-    memcpy(probedata,gprobedata, 3*16*sizeof(unsigned char));
-
-    memcpy(bs_data_sb0,gbs_data_sb0, 8*16*sizeof(dvbcsa_bs_word_t));
-    memcpy(bs_data_ib0,gbs_data_ib0, 8*16*sizeof(dvbcsa_bs_word_t));
-
-
-
+    memcpy( probedata, gprobedata, 3*16*sizeof(unsigned char));
+    memcpy( bs_data_sb0, gbs_data_sb0, 8*16*sizeof(dvbcsa_bs_word_t));
+    memcpy( bs_data_ib0, gbs_data_ib0, 8*16*sizeof(dvbcsa_bs_word_t));
 
     uint8 keylist[BS_BATCH_SIZE][8];     /* the list of keys for the batch run in non-bitsliced form */
 #if BS_BATCH_SIZE>256
@@ -329,11 +309,8 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
 
         aycw_assert_stream(&bs_data_ib0[64], 25, keys_bs, bs_data_sb0);     // check if first bytes of IB1 output are correct
 
-#ifndef USEALLBITSLICE
-        aycw_bit2byteslice(&bs_data_ib0[64], 1);
-#endif
-
         /************** block ***************/
+   			#pragma omp simd
         for (i = 0; i < 8 * 8; i++)
         {
 #ifdef USEBLOCKVIRTUALSHIFT
@@ -346,11 +323,6 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
         /* block schedule key 64 bits -> 448 bits */  /* OPTIMIZEME: only the 16 inner bits in inner loop */
         aycw_block_key_schedule(keys_bs, keyskk);
 
-        /* byte transpose */
-#ifndef USEALLBITSLICE
-        aycw_bit2byteslice(keyskk, 7);    // 448 scheduled key bits / 64 key bits
-#endif
-
         aycw_block_decrypt(keyskk, r);   // r is the generated block output
 
 
@@ -360,11 +332,11 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
 
         aycw_assert_decrypt_result(probedata, keylist, r);
 
-        i = aycw_checkPESheader(r, &candidates);  /* OPTIMIZEME: return value should be first possible slice number to let the loop below start right there */
+				/* OPTIMIZEME: return value should be first possible slice number to let the loop below start right there */
+        i = aycw_checkPESheader(r, &candidates);  
         if (i)
         {
             // candidate keys marked with '1' for the last batch run
-            //printf("\n %d key candidate(s) found\n", i);
             for (i=0; i < BS_BATCH_SIZE; i++)
             {
 
@@ -448,7 +420,7 @@ int main(int argc, char *argv[])
       { 0xB2, 0x74, 0x85, 0x51, 0xF9, 0x3C, 0x9B, 0xD2,  0x30, 0x9E, 0x8E, 0x78, 0xFB, 0x16, 0x55, 0xA9},
       { 0x25, 0x2D, 0x3D, 0xAB, 0x5E, 0x3B, 0x31, 0x39,  0xFE, 0xDF, 0xCD, 0x84, 0x51, 0x5A, 0x86, 0x4A},
       { 0xD0, 0xE1, 0x78, 0x48, 0xB3, 0x41, 0x63, 0x22,  0x25, 0xA3, 0x63, 0x0A, 0x0E, 0xD3, 0x1C, 0x70} };
-   //currentkey32 = 0x00 << 24 | 0x11 << 16 | 0x15 << 8 | 0x00;
+
    currentkey32 = 0x00 << 24 | 0x11 << 16 | 0x15 << 8 | 0x00;
    /* key   00 11 22 33  44 00 00 44 decrypts to
                000001ff11111111aa11111111111155
@@ -525,14 +497,9 @@ int main(int argc, char *argv[])
    {
       bs_data_ib0[i] = bs_data_sb0[i];
    }
-#ifndef USEALLBITSLICE
-   aycw_bit2byteslice(bs_data_ib0, 1);
-#endif
-
-   int threads = omp_get_num_threads();
 
    // Increase it dynamic
-#define INNERBATCH 128
+#define INNERBATCH 96
    /************* outer loop ******************/
    // run over whole key search space
    // key bytes incremented: 0 + 1 + 2 + 4 
