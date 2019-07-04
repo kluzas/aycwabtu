@@ -21,13 +21,14 @@ ayc_src = \
 	aycwabtu_bs_algo.c          \
 	aycwabtu_bs_block.c         \
 	aycwabtu_bs_block_ab.c      \
-	aycwabtu_bs_sse2.c     		\
+	aycwabtu_bs_sse2.c     		  \
+	aycwabtu_bs_avx.c     		  \
 	aycwabtu_bs_stream.c        \
-	aycwabtu_bs_uint32.c	    \
-	aycwabtu_ts.c\
-	libdvbcsa/dvbcsa_algo.c\
-	libdvbcsa/dvbcsa_block.c\
-	libdvbcsa/dvbcsa_key.c\
+	aycwabtu_bs_uint32.c	      \
+	aycwabtu_ts.c               \
+	libdvbcsa/dvbcsa_algo.c     \
+	libdvbcsa/dvbcsa_block.c    \
+	libdvbcsa/dvbcsa_key.c      \
 	libdvbcsa/dvbcsa_stream.c
 
 tsgen_src = tsgen.c

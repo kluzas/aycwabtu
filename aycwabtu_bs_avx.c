@@ -1,7 +1,7 @@
 
 #include "aycwabtu_config.h"
 
-#if PARALLEL_MODE==PARALLEL_128_SSE2
+#if PARALLEL_MODE==PARALLEL_256_AVX
 
 #ifdef BS_SSE_X64
 #error this file is implemented to use 32 integers to load mmx regs
@@ -104,11 +104,7 @@ void aycw_key_transpose(const uint8 key[BS_BATCH_SIZE][8], dvbcsa_bs_word_t *row
    }
 }
 
-#ifdef HAVE_X64_COMPILER
-#error aycw_bit2byteslice() for 128 batch not available yet
-#endif
 
-#ifndef USE_SLOW_BIT2BYTESLICE
 void aycw_bit2byteslice(dvbcsa_bs_word_t *data, int count)
 {
    int i, j, k;
@@ -224,44 +220,80 @@ void aycw_bit2byteslice(dvbcsa_bs_word_t *data, int count)
       p += 8;
    } /* for (k=0; k<8 ; k++) */
 }
-#endif
 
-AYCW_INLINE __m128i BS_SHL(__m128i v, int n)
+// TODO: OPTIMIZEME: These need rewrite to make them faster
+__m256i BS_SHL(__m256i v, int n)
 {
-   __m128i v1, v2;
+		uint64_t *tmp = &v;
 
-   if ((n) >= 64)
-   {
-      v1 = _mm_slli_si128(v, 8);
-      v1 = _mm_slli_epi64(v1, (n)-64);
-   }
-   else
-   {
-      v1 = _mm_slli_epi64(v, n);
-      v2 = _mm_slli_si128(v, 8);
-      v2 = _mm_srli_epi64(v2, 64 - (n));
-      v1 = _mm_or_si128(v1, v2);
-   }
-   return v1;
+		if ( n >= 192 ){
+				tmp[3] = tmp[3] << (n-192);
+				tmp[2] = 0;
+				tmp[1] = 0;
+				tmp[0] = 0;
+		} else  if ( n >= 128 ){
+			  uint64_t remaining = tmp[2] >> (192 - n);
+				tmp[3] = (tmp[3] << (n-128)) | remaining  ;
+				tmp[2] = (tmp[2] << (n-128));
+				tmp[1] = 0;
+				tmp[0] = 0;
+		} else  if ( n >= 64 ){
+			  uint64_t remaining1 = tmp[2] >> (128 - n);
+			  uint64_t remaining2 = tmp[1] >> (128 - n);
+				tmp[3] = (tmp[3] << (n-64)) | remaining1  ;
+				tmp[2] = (tmp[2] << (n-64)) | remaining2  ;
+				tmp[1] = (tmp[1] << (n-64));
+				tmp[0] = 0;
+		} else{
+			  uint64_t remaining1 = tmp[2] >> (64 - n);
+			  uint64_t remaining2 = tmp[1] >> (64 - n);
+			  uint64_t remaining3 = tmp[0] >> (64 - n);
+				tmp[3] = (tmp[3] << (n)) | remaining1;
+				tmp[2] = (tmp[2] << (n)) | remaining2;
+				tmp[1] = (tmp[1] << (n)) | remaining3;
+				tmp[0] = (tmp[0] << (n));
+		}
+
+    return v;
 }
 
-AYCW_INLINE __m128i BS_SHR(__m128i v, int n)
+__m256i BS_SHR(__m256i v, int n)
 {
-   __m128i v1, v2;
+		int64_t *tmp = &v;
 
-   if ((n) >= 64)
-   {
-      v1 = _mm_srli_si128(v, 8);
-      v1 = _mm_srli_epi64(v1, (n)-64);
-   }
-   else
-   {
-      v1 = _mm_srli_epi64(v, n);
-      v2 = _mm_srli_si128(v, 8);
-      v2 = _mm_slli_epi64(v2, 64 - (n));
-      v1 = _mm_or_si128(v1, v2);
-   }
-   return v1;
+		// FIXME: THIS DOES NOT WORK!
+		// TODO: We may need to set the sign
+		int64_t signExt = tmp[3] >> 63;
+
+		if ( n >= 192 ){
+				tmp[0] = tmp[3] >> (n-192);
+				tmp[1] = 0;
+				tmp[2] = 0;
+				tmp[3] = 0;
+		} else  if ( n >= 128 ){
+			  uint64_t remaining = tmp[2] << (192 - n);
+				tmp[0] = (tmp[2] >> (n-128)) ;
+				tmp[1] = (tmp[3] >> (n-128));
+				tmp[2] = 0;
+				tmp[3] = 0;
+		} else  if ( n >= 64 ){
+			  uint64_t remaining1 = tmp[2] >> (128 - n);
+			  uint64_t remaining2 = tmp[1] >> (128 - n);
+				tmp[0] = (tmp[1] << (n-64)) | remaining1  ;
+				tmp[1] = (tmp[2] << (n-64)) | remaining2  ;
+				tmp[2] = (tmp[3] << (n-64));
+				tmp[3] = 0;
+		} else{
+			  uint64_t remaining1 = tmp[2] >> (64 - n);
+			  uint64_t remaining2 = tmp[1] >> (64 - n);
+			  uint64_t remaining3 = tmp[0] >> (64 - n);
+				tmp[0] = (tmp[0] << (n)) | remaining1;
+				tmp[1] = (tmp[1] << (n)) | remaining2;
+				tmp[2] = (tmp[2] << (n)) | remaining3;
+				tmp[3] = (tmp[3] << (n));
+		}
+
+    return v;
 }
 
 #endif

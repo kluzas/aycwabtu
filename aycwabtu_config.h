@@ -11,10 +11,10 @@ typedef uint32_t     uint32;
 
 #define PARALLEL_32_INT       1
 #define PARALLEL_128_SSE2     2
+#define PARALLEL_256_AVX      3
 
 #ifndef PARALLEL_MODE   // can be set outside
-//#define PARALLEL_MODE      PARALLEL_32_INT
-#define PARALLEL_MODE      PARALLEL_128_SSE2
+#define PARALLEL_MODE      PARALLEL_256_AVX
 #endif
 
 //#define HAVE_X64_COMPILER
@@ -23,6 +23,8 @@ typedef uint32_t     uint32;
 #include "aycwabtu_bs_uint32.h"
 #elif PARALLEL_MODE==PARALLEL_128_SSE2
 #include "aycwabtu_bs_sse2.h"
+#elif PARALLEL_MODE==PARALLEL_256_AVX
+#include "aycwabtu_bs_avx.h"
 #else
 #error "unknown/undefined parallel mode"
 #endif
@@ -40,7 +42,7 @@ Run test cases with self test enabled after changing calculation dependent parts
 // performance measure of some core algo parts
 // measure make sense in release config only
 #if _DEBUG
-//#define USE_MEASURE
+#define USE_MEASURE
 #else
 //#define USE_MEASURE
 #endif
@@ -63,12 +65,6 @@ Run test cases with self test enabled after changing calculation dependent parts
    Enable USEALLBITSLICE for large batches */
 #define  USEALLBITSLICE
 
-/* print block registers each round */
-//#define BLOCKDEBUG
-
-/* Use a generic (slow) version of function aycw_bit2byteslice() to check and debug
-   the faster batch sized implementation */
-//#define USE_SLOW_BIT2BYTESLICE
 
 /****************************************** brute force helper prototypes ********************************/
 
