@@ -260,37 +260,43 @@ __m256i BS_SHL(__m256i v, int n)
 __m256i BS_SHR(__m256i v, int n)
 {
 		int64_t *tmp = &v;
-
-		// FIXME: THIS DOES NOT WORK!
-		// TODO: We may need to set the sign
 		int64_t signExt = tmp[3] >> 63;
 
 		if ( n >= 192 ){
 				tmp[0] = tmp[3] >> (n-192);
-				tmp[1] = 0;
-				tmp[2] = 0;
-				tmp[3] = 0;
+				tmp[1] = signExt;
+				tmp[2] = signExt;
+				tmp[3] = signExt;
 		} else  if ( n >= 128 ){
-			  uint64_t remaining = tmp[2] << (192 - n);
-				tmp[0] = (tmp[2] >> (n-128)) ;
-				tmp[1] = (tmp[3] >> (n-128));
-				tmp[2] = 0;
-				tmp[3] = 0;
+			  uint64_t mask = (0x7fffffffffffffff >> ( n - 128 ));
+			  uint64_t high_3 =  tmp[3] << ( 192 - n);
+			  uint64_t high_2 =  tmp[2] << ( 192 - n);
+
+				tmp[0] = ((tmp[2] >> (n-128)) & mask) | high_3 ;
+				tmp[1] = ((tmp[3] >> (n-128)) & mask) | high_2 ;
+				tmp[2] = signExt;
+				tmp[3] = signExt;
+
 		} else  if ( n >= 64 ){
-			  uint64_t remaining1 = tmp[2] >> (128 - n);
-			  uint64_t remaining2 = tmp[1] >> (128 - n);
-				tmp[0] = (tmp[1] << (n-64)) | remaining1  ;
-				tmp[1] = (tmp[2] << (n-64)) | remaining2  ;
-				tmp[2] = (tmp[3] << (n-64));
-				tmp[3] = 0;
+			  uint64_t mask = (0x7fffffffffffffff >> ( n - 64 ));
+			  uint64_t high_3 =  tmp[3] << ( 128 - n);
+			  uint64_t high_2 =  tmp[2] << ( 128 - n);
+			  uint64_t high_1 =  tmp[1] << ( 128 - n);
+
+				tmp[0] = ((tmp[1] >> (n-64)) & mask) | high_1 ;
+				tmp[1] = ((tmp[2] >> (n-64)) & mask) | high_2 ;
+				tmp[2] = ((tmp[3] >> (n-64)) & mask) | high_3 ;
+				tmp[3] = signExt;
 		} else{
-			  uint64_t remaining1 = tmp[2] >> (64 - n);
-			  uint64_t remaining2 = tmp[1] >> (64 - n);
-			  uint64_t remaining3 = tmp[0] >> (64 - n);
-				tmp[0] = (tmp[0] << (n)) | remaining1;
-				tmp[1] = (tmp[1] << (n)) | remaining2;
-				tmp[2] = (tmp[2] << (n)) | remaining3;
-				tmp[3] = (tmp[3] << (n));
+			  uint64_t mask = (0x7fffffffffffffff >> (n));
+			  uint64_t high_3 =  tmp[3] << ( 64 - n);
+			  uint64_t high_2 =  tmp[2] << ( 64 - n);
+			  uint64_t high_1 =  tmp[1] << ( 64 - n);
+
+				tmp[0] = ((tmp[0] >> n) & mask) | high_1 ;
+				tmp[1] = ((tmp[1] >> n) & mask) | high_2 ;
+				tmp[2] = ((tmp[2] >> n) & mask) | high_3 ;
+				tmp[3] =  (tmp[3] >> n);
 		}
 
     return v;
