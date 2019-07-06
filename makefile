@@ -10,8 +10,7 @@ OBJDIR := obj
 DVBCSAINC 	:= libdvbcsa/dvbcsa
 DVBCSALIB 	:= $(DVBCSAINC)/libdvbcsa.a
 
-CFLAGS      =  -w -I $(DVBCSAINC) -O3  -flto -march=znver1  -g -fopenmp 
-#CFLAGS      =  -w -I $(DVBCSAINC) -msse2 -D_DEBUG
+CFLAGS      =  -w -I $(DVBCSAINC) -O3  -flto -march=znver1  -g -fopenmp -fopenmp-simd -fipa-pta 
 
 obj/%.o : %.c | $(OBJDIR)
 	@if [ "$<" == "aycwabtu_main.c" ] ; then (echo -n "#define GITSHA1 \"`git rev-parse --short=16 HEAD`\"") >aycwabtu_version.h; echo "aycwabtu_version.h written"; fi;
@@ -40,7 +39,7 @@ all: aycwabtu
    
 
 aycwabtu: $(ayc_obj) 
-	$(LD) -g -O3   -fopenmp -flto  -o $@ $(ayc_obj) 
+	$(LD) -g -O3    -fopenmp -flto -fipa-pta -o $@ $(ayc_obj) 
 	@echo $@ created
 
 tsgen: $(tsgen_obj) $(DVBCSALIB)
