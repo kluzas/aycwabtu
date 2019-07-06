@@ -294,23 +294,28 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
     aycw_key_transpose(&keylist[0][0], keys_bs);     // transpose BS_BATCH_SIZE keys into bitsliced form
 
     // check if all keys were transposed correctly
+#ifdef SELFTEST
     aycw_assert_key_transpose(&keylist[0][0], keys_bs);
-
+#endif
 
     // inner loop: process 2^16 keys - see aycw_bs_increment_keys_inner()
     for (k = 0; k < KEYSPERINNERLOOP / BS_BATCH_SIZE; k++)
     {
 
         /* check if initial (outer) key and subsequent (inner) key batches are correct */
+#ifdef SELFTEST
         aycw_assertKeyBatch(keys_bs);
+#endif
 
         /************** stream ***************/
         aycw_stream_decrypt(&bs_data_ib0[64], 25, keys_bs, bs_data_sb0);    // 3 bytes required for PES check, 25 bits for some reason
 
+
+#ifdef SELFTEST
         aycw_assert_stream(&bs_data_ib0[64], 25, keys_bs, bs_data_sb0);     // check if first bytes of IB1 output are correct
+#endif
 
         /************** block ***************/
-   			#pragma omp simd
         for (i = 0; i < 8 * 8; i++)
         {
 #ifdef USEBLOCKVIRTUALSHIFT
@@ -330,7 +335,9 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
         aycw_bs_xor24(r, r, &bs_data_ib0[64]);
 
 
+#ifdef SELFTEST
         aycw_assert_decrypt_result(probedata, keylist, r);
+#endif
 
 				/* OPTIMIZEME: return value should be first possible slice number to let the loop below start right there */
         i = aycw_checkPESheader(r, &candidates);  
@@ -353,6 +360,8 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
 
                     memcpy(&data, &probedata[0], 16);
                     dvbcsa_decrypt(&key, data, 16);
+
+#ifdef SELFTEST
                     if (data[0] != 0x00 || data[1] != 0x00 || data[2] != 0x01)
                     {
                         /* bitslice and regular implementations calculated different results - should never happen */
@@ -361,6 +370,7 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
                                 cw[0], cw[1], cw[2], cw[3], cw[4], cw[5], cw[6], cw[7]);
                         exit(ERR_FATAL);
                     }
+#endif
 
                     memcpy(&data, &probedata[1], 16);
                     dvbcsa_decrypt(&key, data, 16);

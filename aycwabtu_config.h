@@ -33,20 +33,18 @@ typedef uint32_t     uint32;
 
 /* enable cross checks of bitsliced and regular csa calculations.
 Run test cases with self test enabled after changing calculation dependent parts */
-#if _DEBUG
+
+#if !defined(NDEBUG)
+//#define _DEBUG
+#endif
+
+
+#ifdef _DEBUG
 #define SELFTEST
 #endif
 
-// performance measure of some core algo parts
-// measure make sense in release config only
-#if _DEBUG
-//#define USE_MEASURE
-#else
-//#define USE_MEASURE
-#endif
 
 #define AYCW_INLINE __inline
-
 
 /* use virtual shifting for 56 block rounds? faster but needs more memory */
 #define USEBLOCKVIRTUALSHIFT

@@ -226,32 +226,7 @@ AYCW_INLINE void aycw__ShiftRegisterLeft(dvbcsa_bs_word_t * RegisterValue, uint8
 
 void aycw__vCaculatePQXYZ(dvbcsa_bs_word_t * A_local, aycw_tstPQXYZ * stPQXYZ)
 {   
-    /*dvbcsa_bs_word_t s1a,s1b,s2a,s2b,s3a,s3b,s4a,s4b,s5a,s5b,s6a,s6b,s7a,s7b;*/
 
-/*  
-#define shift 4
-    aycw_bs_stream_sbox1(A_local[2+shift],  A_local[21+shift], A_local[27+shift], A_local[32+shift], A_local[12+shift], &s1a, &s1b);
-    aycw_bs_stream_sbox2(A_local[10+shift], A_local[23+shift], A_local[24+shift], A_local[33+shift], A_local[5+shift], &s2a, &s2b);
-    aycw_bs_stream_sbox3(A_local[4+shift],  A_local[17+shift], A_local[19+shift], A_local[22+shift], A_local[3+shift], &s3a, &s3b);
-    aycw_bs_stream_sbox4(A_local[1+shift],  A_local[7+shift],  A_local[14+shift], A_local[28+shift], A_local[11+shift], &s4a, &s4b);
-    aycw_bs_stream_sbox5(A_local[15+shift], A_local[20+shift], A_local[29+shift], A_local[34+shift], A_local[18+shift], &s5a, &s5b);
-    aycw_bs_stream_sbox6(A_local[13+shift], A_local[16+shift], A_local[26+shift], A_local[35+shift], A_local[9+shift], &s6a, &s6b);
-    aycw_bs_stream_sbox7(A_local[8+shift],  A_local[25+shift], A_local[30+shift], A_local[31+shift], A_local[6+shift], &s7a, &s7b);
-    stPQXYZ->BS_X[0] = s1a;
-    stPQXYZ->BS_X[1] = s2a;
-    stPQXYZ->BS_X[2] = s3b;
-    stPQXYZ->BS_X[3] = s4b;
-    stPQXYZ->BS_Y[0] = s3a;
-    stPQXYZ->BS_Y[1] = s4a;
-    stPQXYZ->BS_Y[2] = s5b;
-    stPQXYZ->BS_Y[3] = s6b;
-    stPQXYZ->BS_Z[0] = s5a;
-    stPQXYZ->BS_Z[1] = s6a;
-    stPQXYZ->BS_Z[2] = s1b;
-    stPQXYZ->BS_Z[3] = s2b;
-    stPQXYZ->BS_P = s7a;
-    stPQXYZ->BS_Q = s7b;
-    */
     aycw_bs_stream_sbox1(&A_local[6],  &A_local[25], &A_local[31], &A_local[36], &A_local[16], &stPQXYZ->BS_X[0], &stPQXYZ->BS_Z[2]);
     aycw_bs_stream_sbox2(&A_local[14], &A_local[27], &A_local[28], &A_local[37], &A_local[9],  &stPQXYZ->BS_X[1], &stPQXYZ->BS_Z[3]);
     aycw_bs_stream_sbox3(&A_local[8],  &A_local[21], &A_local[23], &A_local[26], &A_local[7],  &stPQXYZ->BS_Y[0], &stPQXYZ->BS_X[2]);
@@ -259,9 +234,6 @@ void aycw__vCaculatePQXYZ(dvbcsa_bs_word_t * A_local, aycw_tstPQXYZ * stPQXYZ)
     aycw_bs_stream_sbox5(&A_local[19], &A_local[24], &A_local[33], &A_local[38], &A_local[22], &stPQXYZ->BS_Z[0], &stPQXYZ->BS_Y[2]);
     aycw_bs_stream_sbox6(&A_local[17], &A_local[20], &A_local[30], &A_local[39], &A_local[13], &stPQXYZ->BS_Z[1], &stPQXYZ->BS_Y[3]);
     aycw_bs_stream_sbox7(&A_local[12], &A_local[29], &A_local[34], &A_local[35], &A_local[10], &stPQXYZ->BS_P ,   &stPQXYZ->BS_Q);
-
-
-
 
 }
 /****** execute init round **************/
@@ -280,16 +252,7 @@ AYCW_INLINE void aycw__vInitRound(uint8 j, uint8 u8Byte,
     dvbcsa_bs_word_t  BS_TMP_B_Result[4];
     dvbcsa_bs_word_t  BS_Bout[4];
     dvbcsa_bs_word_t  BS_Enew[4];
-/*
-    if (j & 0x1) // all odd
-    {
-        u32IV = (iv >> 4 | (iv << 4));
-    }
-    else
-    {
-        u32IV = iv;
-    }
-*/
+
     aycw__ShiftRegisterLeft( stRegister->A_BS, 4, 44);
     for (k = 0; k < 4; k++)
     {
@@ -305,32 +268,27 @@ AYCW_INLINE void aycw__vInitRound(uint8 j, uint8 u8Byte,
         BS_TMP_B[k] = BS_XOR(stRegister->B_BS[k+6*4], stRegister->B_BS[k+9*4]);
         BS_TMP_B[k] = BS_XOR(BS_TMP_B[k], stPQXYZ->BS_Y[k]);
 
-        // OPTIMIZEME: optimizeable by using the upper A_tBITVALUE calculation
-        /*tmp = (j & 0x1)?bs_data_sb0[k+4+u8Byte*8]:bs_data_sb0[k+u8Byte*8];
-        tmp0 = aycw__BitExpandOfByteToBsWord(&u32IV, 0, k); 
-        if (tmp0 != tmp)
-            return 0;*/
+        // OPTIMIZEME: optimizeable by using the upper A_tBITVALUE calculation TODO: only if scalar
+        //dvbcsa_bs_word_t tmp = (j & 0x1)?bs_data_sb0[k+4+u8Byte*8]:bs_data_sb0[k+u8Byte*8];
+        //tmp0 = aycw__BitExpandOfByteToBsWord(&u32IV, 0, k); 
+        //if (tmp0 != tmp)
+         //   return 0;
         BS_TMP_B[k] = BS_XOR(BS_TMP_B[k], ( (j & 0x1)?bs_data_sb0[k+4+u8Byte*8]:bs_data_sb0[k+u8Byte*8]));
 
         BS_TMP_B_Result[k]  = BS_AND(BS_TMP_B[k], BS_NOT(stPQXYZ->BS_P)); //Die nicht zu rotierenden Daten zunächst zwischenspeichern.
 
     }
-    /* yet rotate B */
-    /* OPTIMIZEME: write into B directly?? */
-    for (k = 4; k > 0; k--)
-    {
-        BS_TMP_B[k] = BS_TMP_B[k-1];
-    }
-    BS_TMP_B[0] = BS_TMP_B[4];
 
-    /* B must not be moved by 4 before handling is finished */
+		/* B must not be moved by 4 before handling is finished */
     aycw__ShiftRegisterLeft(stRegister->B_BS, 4, 44);
 
+    /* yet rotate B */
     /* now write the result, both rotated and unrotated */
-    for ( k = 0; k < 4; k++)
-    {             // rotated         //not rotated
-        stRegister->B_BS[k] = BS_OR(BS_AND(BS_TMP_B[k], stPQXYZ->BS_P), BS_TMP_B_Result[k]);
-    }
+    stRegister->B_BS[0] = BS_OR(BS_AND(BS_TMP_B[3], stPQXYZ->BS_P), BS_TMP_B_Result[0]);
+    stRegister->B_BS[1] = BS_OR(BS_AND(BS_TMP_B[0], stPQXYZ->BS_P), BS_TMP_B_Result[1]);
+    stRegister->B_BS[2] = BS_OR(BS_AND(BS_TMP_B[1], stPQXYZ->BS_P), BS_TMP_B_Result[2]);
+    stRegister->B_BS[3] = BS_OR(BS_AND(BS_TMP_B[2], stPQXYZ->BS_P), BS_TMP_B_Result[3]);
+
 
     /********** Combiner calculation **********/
     /* calc bout
@@ -339,14 +297,6 @@ AYCW_INLINE void aycw__vInitRound(uint8 j, uint8 u8Byte,
     Bout 1 := b4,3  b7,2  b3,0  b4,1
     Bout 0 := b8,2  b5,3  b2,1  b7,0
     */
-    /*
-#define shiftB 4
-    BS_Bout[3] = stRegister->B_BS[2*4 + 0 + shiftB ] ^ stRegister->B_BS[5*4 + 1 + shiftB ]  ^ stRegister->B_BS[6*4 + 2 + shiftB ] ^ stRegister->B_BS[8*4 + 3  + shiftB ] ;
-    BS_Bout[2] = stRegister->B_BS[5*4 + 0 + shiftB ] ^ stRegister->B_BS[7*4 + 1 + shiftB ]  ^ stRegister->B_BS[2*4 + 3 + shiftB ] ^ stRegister->B_BS[3*4 + 2  + shiftB ] ;
-    BS_Bout[1] = stRegister->B_BS[4*4 + 3 + shiftB ] ^ stRegister->B_BS[7*4 + 2 + shiftB ]  ^ stRegister->B_BS[3*4 + 0 + shiftB ] ^ stRegister->B_BS[4*4 + 1  + shiftB ] ;
-    BS_Bout[0] = stRegister->B_BS[8*4 + 2 + shiftB ] ^ stRegister->B_BS[5*4 + 3 + shiftB ]  ^ stRegister->B_BS[2*4 + 1 + shiftB ] ^ stRegister->B_BS[7*4 + 0  + shiftB ] ;
-
-*/
     BS_Bout[3] = BS_XOR(BS_XOR(stRegister->B_BS[12], stRegister->B_BS[25]),  BS_XOR(stRegister->B_BS[30], stRegister->B_BS[39]));
     BS_Bout[2] = BS_XOR(BS_XOR(stRegister->B_BS[24], stRegister->B_BS[33]),  BS_XOR(stRegister->B_BS[15], stRegister->B_BS[18]));
     BS_Bout[1] = BS_XOR(BS_XOR(stRegister->B_BS[23], stRegister->B_BS[34]),  BS_XOR(stRegister->B_BS[16], stRegister->B_BS[21]));
@@ -471,30 +421,12 @@ AYCW_INLINE void aycw__vRound(aycw_tstPQXYZ     *stPQXYZ,
     /*  00000100 00000000101000010000000000000000 */
     /*13 27 32 38*/
     /* 01000001 00001000000000000010000000000000 */
-
     /*8  21  26  35*/
-    /*extra_B[3] = BS_XOR (BS_XOR (BS_XOR (B[2][0], B[5][1]), B[6][2]), B[8][3]);
-    extra_B[2] = BS_XOR (BS_XOR (BS_XOR (B[5][0], B[7][1]), B[2][3]), B[3][2]);
-    extra_B[1] = BS_XOR (BS_XOR (BS_XOR (B[4][3], B[7][2]), B[3][0]), B[4][1]);
-    extra_B[0] = BS_XOR (BS_XOR (BS_XOR (B[8][2], B[5][3]), B[2][1]), B[7][0]);*/
-/*
-#define shiftB 4
-    BS_Bout[3] = stRegister->B_BS[2*4 + 0 + shiftB ] ^ stRegister->B_BS[5*4 + 1 + shiftB ]  ^ stRegister->B_BS[6*4 + 2 + shiftB ] ^ stRegister->B_BS[8*4 + 3  + shiftB ] ;
-    BS_Bout[2] = stRegister->B_BS[5*4 + 0 + shiftB ] ^ stRegister->B_BS[7*4 + 1 + shiftB ]  ^ stRegister->B_BS[2*4 + 3 + shiftB ] ^ stRegister->B_BS[3*4 + 2  + shiftB ] ;
-    BS_Bout[1] = stRegister->B_BS[4*4 + 3 + shiftB ] ^ stRegister->B_BS[7*4 + 2 + shiftB ]  ^ stRegister->B_BS[3*4 + 0 + shiftB ] ^ stRegister->B_BS[4*4 + 1  + shiftB ] ;
-    BS_Bout[0] = stRegister->B_BS[8*4 + 2 + shiftB ] ^ stRegister->B_BS[5*4 + 3 + shiftB ]  ^ stRegister->B_BS[2*4 + 1 + shiftB ] ^ stRegister->B_BS[7*4 + 0  + shiftB ] ;
-*/
+
     BS_Bout[3] = BS_XOR(BS_XOR(stRegister->B_BS[12], stRegister->B_BS[25]), BS_XOR(stRegister->B_BS[30], stRegister->B_BS[39]));
     BS_Bout[2] = BS_XOR(BS_XOR(stRegister->B_BS[24], stRegister->B_BS[33]), BS_XOR(stRegister->B_BS[15], stRegister->B_BS[18]));
     BS_Bout[1] = BS_XOR(BS_XOR(stRegister->B_BS[23], stRegister->B_BS[34]), BS_XOR(stRegister->B_BS[16], stRegister->B_BS[21]));
     BS_Bout[0] = BS_XOR(BS_XOR(stRegister->B_BS[38], stRegister->B_BS[27]), BS_XOR(stRegister->B_BS[13], stRegister->B_BS[32]));
-
-    /*
-    Bout[3] = B_BS[1*4 + 0 ] ^ B_BS[4*4 + 1 ]  ^ B_BS[5*4 + 2 ] ^ B_BS[7*4 + 3  ] ;
-    Bout[2] = B_BS[4*4 + 0 ] ^ B_BS[6*4 + 1 ]  ^ B_BS[1*4 + 3 ] ^ B_BS[2*4 + 2  ] ;
-    Bout[1] = B_BS[3*4 + 3 ] ^ B_BS[6*4 + 2 ]  ^ B_BS[2*4 + 0 ] ^ B_BS[3*4 + 1  ] ;
-    Bout[0] = B_BS[7*4 + 2 ] ^ B_BS[4*4 + 3 ]  ^ B_BS[1*4 + 1 ] ^ B_BS[6*4 + 0  ] ;
-    */
 
 
     /* calc of D */

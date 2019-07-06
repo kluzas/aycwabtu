@@ -317,7 +317,6 @@ int aycw_checkPESheader(dvbcsa_bs_word_t *data, dvbcsa_bs_word_t *candidates)
       c = BS_OR(data[i], c);
    }
 
-   // OPTIMIZEME: return if 1st two bytes were not 00 00
    c = BS_OR(BS_NOT(data[16]), c);
 
    for (i = 17; i < 24; i++)
@@ -339,7 +338,7 @@ int aycw_checkPESheader(dvbcsa_bs_word_t *data, dvbcsa_bs_word_t *candidates)
 #error wrong parallel mode
 #endif
 
-   *candidates = BS_NOT(c);
+	 *candidates = BS_NOT(c);
    return ~ret;
 }
 
