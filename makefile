@@ -46,7 +46,7 @@ aycwabtu: $(ayc_obj)
 	$(LD) -g -O3    -fopenmp -flto -fipa-pta -o $@ $(ayc_obj) 
 	@echo $@ created
 
-tsgen: $(tsgen_obj) 
+tsgen: $(tsgen_obj)
 	$(LD) -g -o $@ $(tsgen_obj) -static 
 	@echo $@ created
 
