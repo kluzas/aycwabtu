@@ -44,15 +44,18 @@ dvbcsa_bs_word_t BS_SHR(dvbcsa_bs_word_t v, int n);
 #define BS_EXTRACT8(a, n) ((uint8_t*)&(a))[n]
 #define BS_EXTLS32(a)      _mm_cvtsi128_si32(a)       // Moves the least significant 32 bits of a to a 32-bit integer.
 
+
 #define BS_EMPTY()
 
 
 #ifdef __SSE4_2__
 
+#define BS_EXTRACT32(a,n)    _mm_extract_epi32(a,n)
 #define CHECK_ZERO(a) _mm_testz_si128((a),(a))
 
 #else
 
+#define BS_EXTRACT32(a,n)  BS_EXTLS32(BS_SHR8(c, (n*4)))
 #define CHECK_ZERO(a) (_mm_movemask_epi8(_mm_cmpeq_epi32((a),_mm_setzero_si128())) == 0xFFFF)
 
 #endif
