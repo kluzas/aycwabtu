@@ -30,7 +30,11 @@ ayc_src = \
 	libdvbcsa/dvbcsa_key.c\
 	libdvbcsa/dvbcsa_stream.c
 
-tsgen_src = tsgen.c
+tsgen_src = tsgen.c\
+	libdvbcsa/dvbcsa_algo.c\
+	libdvbcsa/dvbcsa_block.c\
+	libdvbcsa/dvbcsa_key.c\
+	libdvbcsa/dvbcsa_stream.c
 
 ayc_obj = $(ayc_src:%.c=obj/%.o)
 tsgen_obj = $(tsgen_src:%.c=obj/%.o)
@@ -42,8 +46,8 @@ aycwabtu: $(ayc_obj)
 	$(LD) -g -O3    -fopenmp -flto -fipa-pta -o $@ $(ayc_obj) 
 	@echo $@ created
 
-tsgen: $(tsgen_obj) $(DVBCSALIB)
-	$(LD) -g -o $@ $(tsgen_obj) -static -L. -ldvbcsa/dvbcsa/libdvbcsa
+tsgen: $(tsgen_obj)
+	$(LD) -g -o $@ $(tsgen_obj) -static 
 	@echo $@ created
 
 
