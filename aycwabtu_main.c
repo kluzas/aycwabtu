@@ -310,7 +310,6 @@ void process_block_of_keys(uint32_t currentkey32, unsigned char gprobedata[3][16
         aycw_assert_stream(&bs_data_ib0[64], 25, keys_bs, bs_data_sb0);     // check if first bytes of IB1 output are correct
 
         /************** block ***************/
-   			#pragma omp simd
         for (i = 0; i < 8 * 8; i++)
         {
 #ifdef USEBLOCKVIRTUALSHIFT

@@ -4,7 +4,6 @@
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
-#include <x86intrin.h>
 
 typedef __m128i dvbcsa_bs_word_t;
 
