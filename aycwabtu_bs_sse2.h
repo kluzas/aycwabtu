@@ -12,17 +12,11 @@ typedef __m128i dvbcsa_bs_word_t;
 #define BS_BATCH_BYTES 16
 #define BS_BATCH_SHIFT  7
 
-#ifdef BS_SSE_X64
-#define BS_VAL(n, m)	_mm_set_epi64x(n, m)
-#define BS_VAL_LSDW(n)	BS_VAL(0,n)      
-#define BS_VAL64(n)	BS_VAL(0x##n##ULL, 0x##n##ULL)
-#define BS_VAL32(n)	BS_VAL64(n##n)
-#else
 #define BS_VAL_LSDW(n)	BS_VAL(0,0,0,n)      // load 32 bit value to least significant dword
 #define BS_VAL(n, m, o, p)	_mm_set_epi32(n, m, o, p)
-#define BS_VAL32(n)	BS_VAL(0x##n##UL, 0x##n##UL, 0x##n##UL, 0x##n##UL)
-#endif
-
+#define BS_VAL_EPI(n, m)	_mm_set_epi64x(n, m)
+#define BS_VAL64(n)	BS_VAL_EPI(0x##n##ULL, 0x##n##ULL)
+#define BS_VAL32(n)	BS_VAL64(n##n)
 #define BS_VAL16(n)	BS_VAL32(n##n)
 #define BS_VAL8(n)	BS_VAL16(n##n)
 
