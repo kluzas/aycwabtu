@@ -27,6 +27,8 @@ typedef __m128i dvbcsa_bs_word_t;
 
 
 #if defined(__clang__) || defined(__GNUC__) || defined(__MINGW32__)
+
+#include <smmintrin.h>
 static inline __m128i BS_SHL(__m128i v, int n)
 {
 				__uint128_t x =  (__uint128_t) v;
